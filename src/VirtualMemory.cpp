@@ -1,6 +1,7 @@
 #include "VirtualMemory.h"
 #include "PhysicalMemory.h"
 #include "MemoryConstants.h"
+#include "MemoryConstants.h"
 #include <cmath>
 #include <algorithm>
 
@@ -15,8 +16,8 @@ using namespace std;
  * @return The offset (the rightmost bits).
  */
 uint64_t get_offset(uint64_t virtualAddress) {
-    // TODO: Implement using bitwise AND (&) and OFFSET_WIDTH
-    return 0;
+    uint64_t mask = (1ULL << OFFSET_WIDTH) - 1;
+    return virtualAddress & mask;
 }
 
 /**
@@ -27,7 +28,10 @@ uint64_t get_offset(uint64_t virtualAddress) {
  */
 uint64_t get_index(uint64_t virtualAddress, int depth) {
     // TODO: Implement using bitwise SHIFT (>>) and AND (&) operations
-    return 0;
+    int numToShift = OFFSET_WIDTH*(TABLES_DEPTH - depth);
+    uint64_t newVA = virtualAddress >> numToShift;
+    int mask = (1ULL << OFFSET_WIDTH) - 1; // creating mask for the OFFSET_WIDTH most right bits
+    return newVA & mask;
 }
 
 /**
