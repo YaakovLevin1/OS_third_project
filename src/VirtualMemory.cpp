@@ -1,7 +1,11 @@
 #include "VirtualMemory.h"
 #include "PhysicalMemory.h"
 #include "MemoryConstants.h"
+#include "MemoryConstants.h"
+#include <cmath>
+#include <algorithm>
 
+using namespace std;
 // ============================================================================
 // Helper Functions - Bit Manipulations & Math
 // ============================================================================
@@ -36,8 +40,11 @@ uint64_t get_index(uint64_t virtualAddress, int depth) {
  * @return The cyclic distance.
  */
 uint64_t get_cyclic_distance(uint64_t page_swapped_in, uint64_t candidate_page) {
-    // TODO: Implement the cyclic distance formula based on NUM_PAGES
-    return 0;
+    if (page_swapped_in > candidate_page) {
+        return min(page_swapped_in-candidate_page, uint64_t(NUM_PAGES)-page_swapped_in + candidate_page);
+    }
+    return min(candidate_page - page_swapped_in, uint64_t(NUM_PAGES)-candidate_page + page_swapped_in);
+
 }
 
 // ============================================================================
