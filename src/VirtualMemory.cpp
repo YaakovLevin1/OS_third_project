@@ -23,7 +23,6 @@ uint64_t get_offset(uint64_t virtualAddress) {
  * @return The relevant index for this layer.
  */
 uint64_t get_index(uint64_t virtualAddress, int depth) {
-    // TODO: Implement using bitwise SHIFT (>>) and AND (&) operations
     int numToShift = OFFSET_WIDTH*(TABLES_DEPTH - depth);
     uint64_t newVA = virtualAddress >> numToShift;
     int mask = (1ULL << OFFSET_WIDTH) - 1; // creating mask for the OFFSET_WIDTH most right bits
