@@ -4,27 +4,15 @@
 #include <cmath>
 #include <algorithm>
 
+// for useing "min" instead of "std::min"
 using namespace std;
-// ============================================================================
-// Helper Functions - Bit Manipulations & Math
-// ============================================================================
 
-/**
- * Extracts the offset (d) from a given virtual address.
- * @param virtualAddress The full virtual address.
- * @return The offset (the rightmost bits).
- */
 uint64_t get_offset(uint64_t virtualAddress) {
     uint64_t mask = (1ULL << OFFSET_WIDTH) - 1;
     return virtualAddress & mask;
 }
 
-/**
- * Extracts the table index (p_i) for a specific depth in the tree.
- * @param virtualAddress The full virtual address.
- * @param depth The current depth in the tree (e.g., 0 for root, TABLES_DEPTH-1 for the lowest table).
- * @return The relevant index for this layer.
- */
+
 uint64_t get_index(uint64_t virtualAddress, int depth) {
     int numToShift = OFFSET_WIDTH*(TABLES_DEPTH - depth);
     uint64_t newVA = virtualAddress >> numToShift;
@@ -32,12 +20,7 @@ uint64_t get_index(uint64_t virtualAddress, int depth) {
     return newVA & mask;
 }
 
-/**
- * Calculates the minimal cyclic distance between two virtual pages.
- * @param page_swapped_in The virtual page currently being swapped in.
- * @param candidate_page The virtual page being considered for eviction.
- * @return The cyclic distance.
- */
+
 uint64_t get_cyclic_distance(uint64_t page_swapped_in, uint64_t candidate_page) {
     if (page_swapped_in > candidate_page) {
         return min(page_swapped_in-candidate_page, uint64_t(NUM_PAGES)-page_swapped_in + candidate_page);
@@ -46,32 +29,7 @@ uint64_t get_cyclic_distance(uint64_t page_swapped_in, uint64_t candidate_page) 
 
 }
 
-// ============================================================================
-// Helper Functions - Memory Management & Tree Traversal (DFS)
-// ============================================================================
 
-/**
- * Depth-First Search (DFS) on the physical memory to gather frame data.
- * Updates the output parameters passed by reference.
- *
- * @param current_frame The physical frame currently being scanned.
- * @param depth The current depth in the tree.
- * @param current_page The virtual page number represented by the current path.
- * @param page_swapped_in The new page we want to bring in (for distance calculation).
- * @param frame_to_protect A frame that must not be evicted/unlinked (e.g., a newly created table).
- * @param parent_frame The frame index of the parent table.
- * @param parent_index The index within the parent table that points to current_frame.
- * * -- Out Parameters (updated during traversal) --
- * @param out_max_frame_index The highest frame index currently in use.
- * @param out_empty_table_frame The frame number of an empty table (if found).
- * @param out_empty_parent_frame The parent frame of the empty table.
- * @param out_empty_parent_index The index in the parent pointing to the empty table.
- * @param out_max_dist_page The page number with the maximal cyclic distance.
- * @param out_evict_frame The physical frame of the page to be evicted.
- * @param out_evict_parent_frame The parent frame of the evicted page.
- * @param out_evict_parent_index The index in the parent pointing to the evicted page.
- * @param out_max_dist The maximum cyclic distance found so far.
- */
 void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page_swapped_in, uint64_t frame_to_protect,
          uint64_t parent_frame, uint64_t parent_index,
          int& out_max_frame_index, uint64_t& out_empty_table_frame, uint64_t& out_empty_parent_frame, int& out_empty_parent_index,
@@ -81,7 +39,7 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
         out_max_frame_index = current_frame;
 
 
-    if (depth == TABLES_DEPTH) { // Its a page
+    if (depth == TABLES_DEPTH) {
         int dis = get_cyclic_distance(current_page, page_swapped_in);
         if ((dis == out_max_dist && (current_page < out_max_dist_page)) || dis > out_max_dist) {
             // we found a candidate with better cyclic distance - replace it with current
@@ -97,7 +55,7 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
 
     for (uint64_t i = 0; i < PAGE_SIZE; i++) {
         word_t next_frame;
-        //read the content of the i row
+        // read the content of the i row
         PMread(current_frame * PAGE_SIZE + i, &next_frame);
         if (next_frame != 0) {
             is_empty = false;
@@ -119,13 +77,7 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
     }
 }
 
-/**
- * Handles the Page Fault process to find and allocate a new physical frame.
- * Executes the DFS and selects a frame based on the 3 priorities.
- * * @param page_swapped_in The virtual page that triggered the page fault.
- * @param frame_to_protect A frame in the current path that must be protected from eviction (0 if none).
- * @return The physical frame index allocated for the new page/table.
- */
+
 uint64_t find_frame(uint64_t page_swapped_in, uint64_t frame_to_protect) {
     int max_frame_index = 0;
     uint64_t empty_table_frame = 0, empty_parent_frame = 0;
@@ -150,10 +102,6 @@ uint64_t find_frame(uint64_t page_swapped_in, uint64_t frame_to_protect) {
     PMwrite(evict_parent_frame * PAGE_SIZE + evict_parent_index, 0);
     return evict_frame;
 }
-
-// ============================================================================
-// Core API Functions (from VirtualMemory.h)
-// ============================================================================
 
 void VMinitialize() {
     for (uint64_t i = 0; i < PAGE_SIZE; ++i) {
@@ -200,6 +148,7 @@ int VMread(uint64_t virtualAddress, word_t* value) {
 
     return 1;
 }
+
 int VMwrite(uint64_t virtualAddress, word_t value) {
 
     if (virtualAddress >= VIRTUAL_MEMORY_SIZE) {
@@ -240,6 +189,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
     return 1;
 }
 
+// same logic but simplier
 uint64_t VMgetMapping(uint64_t virtualPage) {
     uint64_t current_frame = 0;
 
