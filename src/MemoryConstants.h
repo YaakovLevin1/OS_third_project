@@ -1,4 +1,4 @@
-x#pragma once
+#pragma once
 
 #if __has_include("overrides.h")
 #include "overrides.h"
