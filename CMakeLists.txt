@@ -8,6 +8,7 @@ set(SOURCES
         src/VirtualMemory.cpp
         src/PhysicalMemory.cpp
         tests/test0_sanity.cpp
+        tests/my_tests.cpp
 )
 
 # Create the executable from the source files
