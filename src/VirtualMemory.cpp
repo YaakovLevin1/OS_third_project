@@ -102,7 +102,7 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
     for (uint64_t i = 0; i < PAGE_SIZE; i++) {
         word_t next_frame;
         //read the content of the i row
-        PMread(current_page * PAGE_SIZE + i, &next_frame);
+        PMread(current_frame * PAGE_SIZE + i, &next_frame);
         if (next_frame != 0) {
             is_empty = false;
         }
