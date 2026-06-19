@@ -7,8 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(SOURCES
         src/VirtualMemory.cpp
         src/PhysicalMemory.cpp
-        tests/test0_sanity.cpp
-        tests/my_tests.cpp
+        tests/levin_test_2.cpp
 )
 
 # Create the executable from the source files
