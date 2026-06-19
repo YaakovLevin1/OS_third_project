@@ -1,7 +1,6 @@
 #include "VirtualMemory.h"
 #include "PhysicalMemory.h"
 #include "MemoryConstants.h"
-#include "MemoryConstants.h"
 #include <cmath>
 #include <algorithm>
 
@@ -197,14 +196,21 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
 }
 
 uint64_t VMgetMapping(uint64_t virtualPage) {
-
     uint64_t current_frame = 0;
+
+    uint64_t virtualAddress = virtualPage << OFFSET_WIDTH;
+
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
-        uint64_t index = get_index(virtualPage, depth);
+        uint64_t index = get_index(virtualAddress, depth);
         uint64_t entry_address = current_frame * PAGE_SIZE + index;
+        word_t next_frame;
+        PMread(entry_address, &next_frame);
+
+        if (next_frame == 0) {
+            return 0;
+        }
+        current_frame = next_frame;
     }
-    // TODO: Safely traverse the tree (read-only, no allocations or find_frame calls).
-    // TODO: If a 0 is encountered at any level, return 0 immediately.
-    // TODO: If the physical page is reached, return its frame index.
-    return 0;
+
+    return current_frame;
 }
