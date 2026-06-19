@@ -1,7 +1,6 @@
 #include "VirtualMemory.h"
 #include "PhysicalMemory.h"
 #include "MemoryConstants.h"
-#include "MemoryConstants.h"
 #include <cmath>
 #include <algorithm>
 
@@ -78,12 +77,10 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
          int& out_max_frame_index, uint64_t& out_empty_table_frame, uint64_t& out_empty_parent_frame, int& out_empty_parent_index,
          uint64_t& out_max_dist_page, uint64_t& out_evict_frame, uint64_t& out_evict_parent_frame, int& out_evict_parent_index, uint64_t& out_max_dist) {
 
-    // TODO: Update out_max_frame_index if current_frame is larger
     if((int)current_frame > out_max_frame_index)
         out_max_frame_index = current_frame;
 
 
-    // TODO: Check if leaf (depth == TABLES_DEPTH) -> It's a page! Calculate distance and update eviction candidates.
     if (depth == TABLES_DEPTH) { // Its a page
         int dis = get_cyclic_distance(current_page, page_swapped_in);
         if ((dis == out_max_dist && (current_page < out_max_dist_page)) || dis > out_max_dist) {
@@ -96,7 +93,6 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
         }
         return;
     }
-    // TODO: If not a leaf (it's a table) -> Check if it's completely empty (and not frame_to_protect). Update empty table candidates.
     bool is_empty = true;
 
     for (uint64_t i = 0; i < PAGE_SIZE; i++) {
@@ -105,6 +101,7 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
         PMread(current_frame * PAGE_SIZE + i, &next_frame);
         if (next_frame != 0) {
             is_empty = false;
+
             uint64_t next_page = (current_page << OFFSET_WIDTH) | i;
 
             dfs(next_frame, depth + 1, next_page, page_swapped_in, frame_to_protect,
@@ -165,6 +162,11 @@ void VMinitialize() {
 }
 
 int VMread(uint64_t virtualAddress, word_t* value) {
+
+    if (virtualAddress >= VIRTUAL_MEMORY_SIZE) {
+        return 0;
+    }
+
     uint64_t current_frame = 0;
     uint64_t virtualPage = virtualAddress >> OFFSET_WIDTH;
 
@@ -199,6 +201,11 @@ int VMread(uint64_t virtualAddress, word_t* value) {
     return 1;
 }
 int VMwrite(uint64_t virtualAddress, word_t value) {
+
+    if (virtualAddress >= VIRTUAL_MEMORY_SIZE) {
+        return 0;
+    }
+
     uint64_t current_frame = 0;
     uint64_t virtualPage = virtualAddress >> OFFSET_WIDTH;
 
@@ -234,14 +241,21 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
 }
 
 uint64_t VMgetMapping(uint64_t virtualPage) {
-
     uint64_t current_frame = 0;
+
+    uint64_t virtualAddress = virtualPage << OFFSET_WIDTH;
+
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
-        uint64_t index = get_index(virtualPage, depth);
+        uint64_t index = get_index(virtualAddress, depth);
         uint64_t entry_address = current_frame * PAGE_SIZE + index;
+        word_t next_frame;
+        PMread(entry_address, &next_frame);
+
+        if (next_frame == 0) {
+            return 0;
+        }
+        current_frame = next_frame;
     }
-    // TODO: Safely traverse the tree (read-only, no allocations or find_frame calls).
-    // TODO: If a 0 is encountered at any level, return 0 immediately.
-    // TODO: If the physical page is reached, return its frame index.
-    return 0;
+
+    return current_frame;
 }
