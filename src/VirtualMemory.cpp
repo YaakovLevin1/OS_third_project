@@ -26,7 +26,6 @@ uint64_t get_offset(uint64_t virtualAddress) {
  * @return The relevant index for this layer.
  */
 uint64_t get_index(uint64_t virtualAddress, int depth) {
-    // TODO: Implement using bitwise SHIFT (>>) and AND (&) operations
     int numToShift = OFFSET_WIDTH*(TABLES_DEPTH - depth);
     uint64_t newVA = virtualAddress >> numToShift;
     int mask = (1ULL << OFFSET_WIDTH) - 1; // creating mask for the OFFSET_WIDTH most right bits
@@ -79,9 +78,47 @@ void dfs(uint64_t current_frame, int depth, uint64_t current_page, uint64_t page
          uint64_t& out_max_dist_page, uint64_t& out_evict_frame, uint64_t& out_evict_parent_frame, int& out_evict_parent_index, uint64_t& out_max_dist) {
 
     // TODO: Update out_max_frame_index if current_frame is larger
+    if((int)current_frame > out_max_frame_index)
+        out_max_frame_index = current_frame;
+
+
     // TODO: Check if leaf (depth == TABLES_DEPTH) -> It's a page! Calculate distance and update eviction candidates.
+    if (depth == TABLES_DEPTH) { // Its a page
+        int dis = get_cyclic_distance(current_page, page_swapped_in);
+        if ((dis == out_max_dist && (current_page < out_max_dist_page)) || dis > out_max_dist) {
+            // we found a candidate with better cyclic distance - replace it with current
+            out_max_dist = dis;
+            out_max_dist_page = current_page;
+            out_evict_frame = current_frame;
+            out_evict_parent_frame = parent_frame;
+            out_evict_parent_index = (int)parent_index;
+        }
+        return;
+    }
     // TODO: If not a leaf (it's a table) -> Check if it's completely empty (and not frame_to_protect). Update empty table candidates.
-    // TODO: If not empty and not a leaf -> Iterate over its PAGE_SIZE entries. If entry != 0, call DFS recursively.
+    bool is_empty = true;
+
+    for (uint64_t i = 0; i < PAGE_SIZE; i++) {
+        word_t next_frame;
+        //read the content of the i row
+        PMread(current_frame * PAGE_SIZE + i, &next_frame);
+        if (next_frame != 0) {
+            is_empty = false;
+        }
+        uint64_t next_page = (current_page << OFFSET_WIDTH) | i;
+
+        dfs(next_frame, depth + 1, next_page, page_swapped_in, frame_to_protect,
+                current_frame, i,
+                out_max_frame_index, out_empty_table_frame, out_empty_parent_frame, out_empty_parent_index,
+                out_max_dist_page, out_evict_frame, out_evict_parent_frame, out_evict_parent_index, out_max_dist);
+    }
+    if (is_empty && current_frame != 0 && current_frame != frame_to_protect) {
+        if (out_empty_parent_frame == 0) {
+            out_empty_table_frame = current_frame;
+            out_empty_parent_frame = parent_frame;
+            out_empty_parent_index = parent_index;
+        }
+    }
 }
 
 /**
